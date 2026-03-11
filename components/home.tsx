@@ -68,13 +68,12 @@ const Home = () => {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                <Button size="lg" className="h-12 px-8 text-md font-semibold group">
-                  Get Started for Free
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-                <Button size="lg" variant="outline" className="h-12 px-8 text-md font-semibold bg-background">
-                  View Components
-                </Button>
+                <Link href={'/login'}>
+                    <Button size="lg" className="h-12 px-8 text-md font-semibold group">
+                        Get Started for Free
+                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
+                </Link>
               </div>
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
