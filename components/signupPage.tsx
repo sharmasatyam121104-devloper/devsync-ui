@@ -9,6 +9,9 @@ import { Mail, Lock, User, ArrowLeft, ShieldCheck, Rocket } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/logo";
+import clientCatchError from "@/lib/clientCatchError";
+import httpRequest from "@/lib/http";
+import { useRouter } from "next/navigation";
 
 interface onRegisterInterface {
   email: string
@@ -21,30 +24,48 @@ const SignupPage = () => {
   const [step, setStep] = useState(1); // 1: Registration, 2: OTP Verification
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "" });
+  const router = useRouter()
 
-  // Phase 1: Register Account
-  const onRegister = (values: onRegisterInterface) => {
-    setLoading(true);
-    // Simulation: API call to register and send OTP
-    setTimeout(() => {
-      console.log(values);
+
+  const onRegister = async(values: onRegisterInterface) => {
+    try {
+      setLoading(true);
       setFormData({ name: values.fullname, email: values.email });
+      const payload = {
+        fullname: values.fullname,
+        email: values.email,
+        password: values.password
+      }
+      const {data} = await httpRequest.post('/user/signup', payload)
       setStep(2);
+      message.success( data.message || "Account created! Please verify your email.");
+    } 
+    catch (error) {
+      return clientCatchError(error)
+    }
+    finally {
       setLoading(false);
-      message.success("Account created! Please verify your email.");
-    }, 1500);
+    }
   };
 
   // Phase 2: Verify OTP
-  const onVerifyOTP = (values: { otp: string }) => {
-    setLoading(true);
-    // Simulation: Verify OTP logic
-    setTimeout(() => {
-      console.log("Verified for:", formData.email, "OTP:", values.otp);
+  const onVerifyOTP = async(values: { otp: string }) => {
+    try {
+      setLoading(true);
+      const payload = {
+        email: formData.email,
+        otp: values.otp
+      }
+      const {data} = await httpRequest.post('/user/verify-otp', payload)
+      message.success(data.message || "Email verified! Welcome to DevSync, Please login now.");
+      router.push('/login');
+    } 
+    catch (error) {
+      return clientCatchError(error)
+    }
+    finally {
       setLoading(false);
-      message.success("Email verified! Welcome to DevSync.");
-      // router.push('/dashboard');
-    }, 1500);
+    }
   };
 
   return (

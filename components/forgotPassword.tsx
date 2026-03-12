@@ -9,6 +9,9 @@ import { Mail, Lock, ArrowLeft, KeyRound, ShieldCheck, RotateCcw } from "lucide-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/logo";
+import clientCatchError from "@/lib/clientCatchError";
+import { useRouter } from "next/navigation";
+import httpRequest from "@/lib/http";
 
 interface handleResetPasswordInterface {
   newPassword: string
@@ -20,29 +23,44 @@ const ForgotPassword = () => {
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter()
+
   // Phase 1: OTP Send Logic
-  const handleSendOTP = (values: { email: string }) => {
-    setLoading(true);
-    // Simulation: API call for OTP
-    setTimeout(() => {
+  const handleSendOTP = async(values: { email: string }) => {
+    try {
+      setLoading(true);
+      await httpRequest.post('/user/forgot-password', values)
       setUserEmail(values.email);
       setStep(2);
-      setLoading(false);
       message.success("OTP sent successfully to " + values.email);
-    }, 1200);
+    } 
+    catch (error) {
+      return clientCatchError(error)
+    }
+    finally {
+      setLoading(false)
+    }
   };
 
   // Phase 2: Reset Password Logic
-  const handleResetPassword = (values: handleResetPasswordInterface) => {
-    setLoading(true);
-    // Simulation: API call to verify OTP and update password
-    setTimeout(() => {
-      console.log(values);
-      console.log("Reset Success for:", userEmail, values);
-      setLoading(false);
+  const handleResetPassword = async(values: handleResetPasswordInterface) => {
+   try {
+     setLoading(true);
+     const payload = {
+      email: userEmail,
+      otp: values.otp,
+      newPassword: values.newPassword
+     }
+      await httpRequest.post('/user/change-password', payload)
       message.success("Password updated! You can now login.");
-      // router.push('/login') // Use next/navigation to redirect
-    }, 1200);
+      router.push('/login')
+   } 
+    catch (error) {
+      return clientCatchError(error)
+    } 
+    finally {
+      setLoading(false)
+    }
   };
 
   return (

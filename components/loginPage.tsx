@@ -7,15 +7,35 @@ import { Mail, Lock, ArrowLeft } from "lucide-react";
 // Shadcn Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button"; 
-import Logo from "@/components/logo"; // Jo humne abhi banaya tha
+import Logo from "@/components/logo"; 
+import { useState } from "react";
+import clientCatchError from "@/lib/clientCatchError";
+import httpRequest from "@/lib/http";
+
+interface ValuesInterface {
+  email: string,
+  password: true,
+}
 
 const LoginPage = () => {
+  const [loading, setLoading] = useState(false)
   const [form] = Form.useForm();
 
-  const onFinish = (values: any) => {
-    console.log("Success:", values);
-    message.success("Logging in success.!");
-    // Yahan apni auth logic daalein
+  const onFinish = async(values: ValuesInterface) => {
+    try {
+      setLoading(true)
+      const payload = {
+        email: values.email,
+        password: values.password
+      }
+      const {data} = await httpRequest.post('/user/login', payload)
+      message.success(data.message||"Logging in success.!");
+    } catch (error) {
+      return clientCatchError(error)
+    }
+    finally {
+      setLoading(false)
+    }
   };
 
   return (
@@ -94,6 +114,8 @@ const LoginPage = () => {
                   htmlType="submit" 
                   block 
                   className="h-11 text-md font-semibold bg-primary hover:bg-primary/90 rounded-md border-none"
+                  loading={loading}
+                  disabled={loading}
                 >
                   Sign In
                 </AntButton>
