@@ -1,11 +1,9 @@
-import React from 'react';
+import UserDashboard from "@/components/user/userDashboard";
 
-const UserRouter = () => {
+const UserDashboardRouter = () => {
   return (
-    <div>
-      UserRouter
-    </div>
+    <UserDashboard/>
   );
 }
 
-export default UserRouter;
+export default UserDashboardRouter;

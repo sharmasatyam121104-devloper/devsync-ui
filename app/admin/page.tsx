@@ -1,9 +1,10 @@
-import React from 'react'
+import AdminDashboard from '@/components/admin/adminDashboard';
+import React from 'react';
 
-const AdminPageRouter = () => {
+const AdminDashboardRouter = () => {
   return (
-    <div>AdminPageRouter</div>
-  )
+    <AdminDashboard/>
+  );
 }
 
-export default AdminPageRouter
+export default AdminDashboardRouter;
