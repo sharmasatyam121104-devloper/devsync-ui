@@ -8,9 +8,10 @@ import { Mail, Lock, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button"; 
 import Logo from "@/components/logo"; 
-import { useState } from "react";
+import {  useState } from "react";
 import clientCatchError from "@/lib/clientCatchError";
 import httpRequest from "@/lib/http";
+import { useRouter } from "next/navigation";
 
 interface ValuesInterface {
   email: string,
@@ -20,6 +21,7 @@ interface ValuesInterface {
 const LoginPage = () => {
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm();
+  const router = useRouter()
 
   const onFinish = async(values: ValuesInterface) => {
     try {
@@ -30,6 +32,15 @@ const LoginPage = () => {
       }
       const {data} = await httpRequest.post('/user/login', payload)
       message.success(data.message||"Logging in success.!");
+      const role = data.role
+      console.log(role);
+      if(role === "ADMIN"){
+        router.replace('/admin')
+      }
+      else {
+        router.replace('/user')
+      }
+
     } catch (error) {
       return clientCatchError(error)
     }

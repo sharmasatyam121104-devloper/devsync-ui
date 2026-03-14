@@ -1,8 +1,8 @@
 "use client"
 
-import { ReactNode, useState } from "react"
+import { ReactNode,  useEffect, useState } from "react"
 import Link from "next/link"
-import { Layout, Menu, Tooltip } from "antd"
+import { Layout, Menu, Skeleton, Tooltip, Button as AntButton } from "antd"
 import {
   DashboardOutlined,
   FlagOutlined,
@@ -26,8 +26,13 @@ import {
 } from "lucide-react"
 
 import Logo from "../logo"
-import { Button } from "../ui/button"
 import { usePathname } from "next/navigation"
+import handleLogout from "@/lib/handleLogout"
+import useSWR, { mutate } from "swr"
+import { getSession } from "@/lib/getSession"
+import { useRouter } from "next/navigation"
+import fetcher from "@/lib/fetcher"
+import RefreshToken from "../refreshToken"
 
 const { Sider, Content, Header } = Layout
 
@@ -118,19 +123,91 @@ const menuItems = [
         key: "/admin/profile",
         icon: <UserRoundPen style={{ color: TEXT_COLOR }} size={16} />,
         label: <Link href="/admin/profile">My Profile</Link>,
-      },
-      {
-        key: "logout",
-        icon: <LogoutOutlined style={{ color: TEXT_COLOR }} />,
-        label: (<Tooltip title={"Click here for logout."}><Button variant={"link"} onClick={()=>alert("logout")} className="cursor-pointer">Logout</Button></Tooltip>),
-      },
+      }
     ],
   },
 ]
 
+export interface Session {
+  id: string
+  email: string
+  fullname: string
+  role: "USER" | "ADMIN"
+  iat: number
+  exp: number
+}
+
 const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
+
+  const router = useRouter()
   const pathname = usePathname()
+
+
+  const EightySecInMs = 80000
+  const { error} = useSWR('/user/refresh-token', fetcher, {
+    refreshInterval: EightySecInMs, shouldRetryOnError: false
+  })
+
+  const logoutUser = async()=>{
+    await handleLogout()
+    mutate(() => true, undefined, { revalidate: false })
+  }
+
+  const logoutUserbtn = async()=>{
+    await handleLogout()
+    router.replace('/login')
+    mutate(() => true, undefined, { revalidate: false })
+  }
+
+  useEffect(() => {
+  if (error) {
+    logoutUser()
+    router.replace('/login')
+    return
+  }
+  }, [error, router])
+
+  useEffect(() => {
+
+    const fetchSession = async () => {
+      try {
+
+        const data = await getSession()
+
+        if(!data) {
+          router.push("/login")
+          return
+        }
+
+        if (data.role !== "ADMIN") {
+          router.push("/login")
+          return
+        }
+
+        setSession(data)
+
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSession()
+
+  }, [router])
+
+  if (loading) {
+    return (
+      <Skeleton active />
+    )
+  }
+
+  if (!session) {
+    return <Skeleton active />
+  }
+
 
   return (
     <Layout style={{ minHeight: "90vh", background: PRIMARY_BG }}>
@@ -177,11 +254,22 @@ const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
             </div>
 
           {/* Welcome Admin (hidden on mobile) */}
-          <div className="hidden sm:flex items-center gap-2 font-bold text-lg text-gray-900">
+          <div className="flex gap-6">
+            <div className="hidden sm:flex items-center gap-2 font-bold text-lg text-gray-900">
             <UserCircle className="w-7 h-7 text-black" />
             <span>Welcome Admin</span>
+            </div>
+            <Tooltip title={"Click here for logout."}>
+              <AntButton
+                type={"text"}
+                className="hover:bg-red-500"
+                onClick={logoutUserbtn}
+              >
+                <LogoutOutlined style={{ color: TEXT_COLOR }} className="ml-18 " />
+              </AntButton>
+            </Tooltip>
           </div>
-
+          
         </Header>
 
         {/* CONTENT */}
@@ -192,6 +280,7 @@ const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
             minHeight: "100vh",
           }}
         >
+          {session && <RefreshToken />}
           {children}
         </Content>
 

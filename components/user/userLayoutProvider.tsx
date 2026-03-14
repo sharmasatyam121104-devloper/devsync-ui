@@ -1,8 +1,8 @@
 "use client"
 
-import { ReactNode, useState } from "react"
+import { ReactNode,  useEffect, useState } from "react"
 import Link from "next/link"
-import { Layout, Menu, Tooltip } from "antd"
+import { Layout, Menu, Skeleton, Tooltip, Button as AntButton } from "antd"
 import {
   DashboardOutlined,
   MenuUnfoldOutlined,
@@ -23,8 +23,12 @@ import {
 } from "lucide-react"
 
 import Logo from "../logo"
-import { usePathname } from "next/navigation"
-import { Button } from "../ui/button"
+import {  usePathname, useRouter } from "next/navigation"
+import { getSession } from "@/lib/getSession"
+import RefreshToken from "../refreshToken"
+import fetcher from "@/lib/fetcher"
+import useSWR, { mutate } from 'swr'
+import handleLogout from "@/lib/handleLogout"
 
 const { Sider, Content, Header } = Layout
 
@@ -124,19 +128,91 @@ const menuItems = [
       {
         key: "user/profile",
         label: <Link href="/user/profile">My Profile</Link>,
-      },
-      {
-        key: "logout",
-        icon: <LogoutOutlined style={{ color: TEXT_COLOR }} />,
-        label: (<Tooltip title={"Click here for logout."}><Button variant={"link"} onClick={()=>alert("logout")} className="cursor-pointer">Logout</Button></Tooltip>),
-      },
+      }
     ],
   },
 ]
 
+
+export interface Session {
+  id: string
+  email: string
+  fullname: string
+  role: "USER" | "ADMIN"
+  iat: number
+  exp: number
+}
+
 const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const [collapsed, setCollapsed] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
   const pathname = usePathname()
+  const EightySecInMs = 80000
+  const router = useRouter()
+
+  const { error} = useSWR('/user/refresh-token', fetcher, {
+    refreshInterval: EightySecInMs, shouldRetryOnError: false
+  })
+
+  const logoutUser = async()=>{
+    await handleLogout()
+    mutate(() => true, undefined, { revalidate: false })
+  }
+
+  const logoutUserbtn = async()=>{
+    await handleLogout()
+    router.replace('/login')
+    mutate(() => true, undefined, { revalidate: false })
+  }
+
+  useEffect(() => {
+        if (error) {
+          logoutUser()
+          router.replace('/login')
+          return
+        }
+      }, [error, router])
+
+  useEffect(() => {
+
+    const fetchSession = async () => {
+      try {
+
+        const data = await getSession()
+
+        if(!data) {
+          router.push("/login")
+          return
+        }
+
+        if (data.role !== "USER") {
+          router.push("/login")
+          return
+        }
+
+        setSession(data)
+
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSession()
+
+  }, [router])
+
+    if (loading) {
+      return (
+        <Skeleton active />
+      )
+    }
+
+    if (!session) {
+      return <Skeleton active />
+    }
+
+
 
   return (
     <Layout style={{ minHeight: "90vh", background: PRIMARY_BG }} >
@@ -185,6 +261,15 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
           <div className="hidden sm:flex items-center gap-2 font-bold text-lg text-gray-900">
             <span>Welcome Developer</span>
           </div>
+          <Tooltip title={"Click here for logout."}>
+              <AntButton
+                type={"text"}
+                className="hover:bg-red-500"
+                onClick={logoutUserbtn}
+              >
+                <LogoutOutlined style={{ color: TEXT_COLOR }} className="ml-18 " />
+              </AntButton>
+            </Tooltip>
 
         </Header>
 
@@ -196,6 +281,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
             minHeight: "100vh",
           }}
         >
+          {session && <RefreshToken />}
           {children}
         </Content>
 
