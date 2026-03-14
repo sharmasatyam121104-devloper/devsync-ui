@@ -35,7 +35,7 @@ const menuItems = [
   {
     key: "/user",
     icon: <DashboardOutlined />,
-    label: <Link href="/dashboard">Dashboard</Link>,
+    label: <Link href="/user">Dashboard</Link>,
   },
 
   {
@@ -82,14 +82,14 @@ const menuItems = [
     label: "Files",
     children: [
       {
-        key: "/files/upload",
+        key: "/user/files/upload",
         icon: <Upload size={16} />,
-        label: <Link href="/files/upload">Upload ZIP</Link>,
+        label: <Link href="/user/files/upload">Upload ZIP</Link>,
       },
       {
-        key: "/files/history",
+        key: "/user/files/history",
         icon: <History size={16} />,
-        label: <Link href="/files/history">File History</Link>,
+        label: <Link href="/user/files/history">File History</Link>,
       },
     ],
   },
@@ -100,20 +100,20 @@ const menuItems = [
     label: "Meetings",
     children: [
       {
-        key: "/meetings/create",
-        label: <Link href="/meetings/create">Schedule Meeting</Link>,
+        key: "/user/meetings/create",
+        label: <Link href="/user/meetings/create">Schedule Meeting</Link>,
       },
       {
-        key: "/meetings",
-        label: <Link href="/meetings">Upcoming Meetings</Link>,
+        key: "/user/meetings",
+        label: <Link href="/user/meetings">Upcoming Meetings</Link>,
       },
     ],
   },
 
   {
-    key: "/chat",
+    key: "/user/chat",
     icon: <MessageCircle size={16} />,
-    label: <Link href="/chat">Project Chat</Link>,
+    label: <Link href="/user/chat">Project Chat</Link>,
   },
 
   {
@@ -122,8 +122,8 @@ const menuItems = [
     label: "Profile",
     children: [
       {
-        key: "/profile",
-        label: <Link href="/profile">My Profile</Link>,
+        key: "user/profile",
+        label: <Link href="/user/profile">My Profile</Link>,
       },
       {
         key: "logout",
@@ -139,13 +139,13 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const pathname = usePathname()
 
   return (
-    <Layout style={{ minHeight: "90vh", background: PRIMARY_BG }}>
+    <Layout style={{ minHeight: "90vh", background: PRIMARY_BG }} >
       
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        style={{ background: PRIMARY_BG }}
+        style={{ background: PRIMARY_BG, position: "sticky", top: 0 }}
         breakpoint="lg"
         trigger={null} 
       >
