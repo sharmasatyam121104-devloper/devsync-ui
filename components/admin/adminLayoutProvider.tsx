@@ -139,7 +139,7 @@ export interface Session {
 
 const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
 
   const router = useRouter()
@@ -177,14 +177,12 @@ const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
 
         const data = await getSession()
 
-        if(!data) {
-          router.push("/login")
-          return
-        }
 
-        if (data.role !== "ADMIN") {
-          router.push("/login")
-          return
+        if(data){
+          if (data.role !== "ADMIN") {
+            router.push("/login")
+            return
+          }
         }
 
         setSession(data)

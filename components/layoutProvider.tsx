@@ -18,7 +18,7 @@ export interface Session {
   exp: number
 }
 
-const LayoutProvider: FC<Props> = ({ children, role }) => {
+const LayoutProvider: FC<Props> = ({ children }) => {
   const [session, setSession] = useState<Session | null | undefined>(undefined) // undefined while loading
   const router = useRouter()
   const pathname = usePathname()
@@ -32,29 +32,12 @@ const LayoutProvider: FC<Props> = ({ children, role }) => {
   }, [])
 
   useEffect(() => {
-    if (session === undefined) return // still loading
-
-    // If logged in and on login/signup, redirect to dashboard
     if (session && (pathname === "/login" || pathname === "/signup")) {
+      console.log("acess in mainlayout");
       router.replace(session.role === "ADMIN" ? "/admin" : "/user")
       return
     }
-
-    // If not logged in and trying to access protected page, redirect to login
-    if (!session) {
-      if ((role === "ADMIN" && pathname.startsWith("/admin")) ||
-          (role === "USER" && pathname.startsWith("/user"))) {
-        router.replace("/login")
-        return
-      }
-    }
-
-    // If logged in but role mismatch, redirect to login
-    if (session && role && session.role !== role) {
-      router.replace("/login")
-    }
-
-  }, [session, pathname, role, router])
+  }, [session])
 
   if (session === undefined) return <Skeleton active />
 

@@ -146,7 +146,6 @@ export interface Session {
 const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const [collapsed, setCollapsed] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [session, setSession] = useState<Session | null>(null)
   const pathname = usePathname()
   const EightySecInMs = 80000
   const router = useRouter()
@@ -163,11 +162,12 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const logoutUserbtn = async()=>{
     await handleLogout()
     router.replace('/login')
-    mutate(() => true, undefined, { revalidate: false })
+    return
   }
 
   useEffect(() => {
         if (error) {
+          console.log("acess in ulayout in 169");
           logoutUser()
           router.replace('/login')
           return
@@ -177,30 +177,19 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   useEffect(() => {
 
     const fetchSession = async () => {
-      try {
-
         const data = await getSession()
 
-        if(!data) {
+       if(!data || data.role !== "USER") {
+        console.log("acess in ualayout, 184");
           router.push("/login")
           return
-        }
-
-        if (data.role !== "USER") {
-          router.push("/login")
-          return
-        }
-
-        setSession(data)
-
-      } finally {
-        setLoading(false)
       }
+
     }
 
     fetchSession()
 
-  }, [router])
+  }, [])
 
     if (loading) {
       return (
@@ -208,9 +197,6 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
       )
     }
 
-    if (!session) {
-      return <Skeleton active />
-    }
 
 
 
@@ -281,7 +267,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
             minHeight: "100vh",
           }}
         >
-          {session && <RefreshToken />}
+          { <RefreshToken />}
           {children}
         </Content>
 
