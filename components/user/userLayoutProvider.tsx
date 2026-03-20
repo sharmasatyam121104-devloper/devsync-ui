@@ -145,7 +145,7 @@ export interface Session {
 
 const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const [collapsed, setCollapsed] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loading] = useState(false)
   const pathname = usePathname()
   const EightySecInMs = 80000
   const router = useRouter()
@@ -166,23 +166,31 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   }
 
   useEffect(() => {
-        if (error) {
-          console.log("acess in ulayout in 169");
-          logoutUser()
-          router.replace('/login')
-          return
-        }
-      }, [error, router])
+    if (error) {
+      logoutUser()
+      router.replace('/login')
+      return
+    }
+  }, [error, router])
 
   useEffect(() => {
 
     const fetchSession = async () => {
         const data = await getSession()
 
-       if(!data || data.role !== "USER") {
-        console.log("acess in ualayout, 184");
+      if (!data) {
+        // Not logged in → redirect to login
+        router.push("/login")
+        return
+      }
+
+      // ab data guaranteed hai
+      if (data.role !== "USER") {
+        if (data.role === "ADMIN") {
+          router.push("/admin")
+        } else {
           router.push("/login")
-          return
+        }
       }
 
     }
@@ -191,23 +199,28 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
 
   }, [])
 
-    if (loading) {
-      return (
-        <Skeleton active />
-      )
-    }
+  if (loading) {
+    return (
+      <Skeleton active />
+    )
+  }
 
 
 
 
   return (
-    <Layout style={{ minHeight: "90vh", background: PRIMARY_BG }} >
+    <Layout style={{ height: "100vh", overflow: "hidden", background: PRIMARY_BG }}>
       
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        style={{ background: PRIMARY_BG, position: "sticky", top: 0 }}
+          style={{ 
+            background: PRIMARY_BG, 
+            position: "sticky", 
+            top: 0,
+            height: "100vh"
+          }}
         breakpoint="lg"
         trigger={null} 
       >
@@ -233,7 +246,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
         />
       </Sider>
 
-      <Layout>
+      <Layout style={{ height: "100vh" }}>
 
         {/* HEADER */}
         <Header
@@ -264,7 +277,8 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
           style={{
             padding: 24,
             background: "#f8fafc",
-            minHeight: "100vh",
+            overflowY: "auto",   // 🔥 scroll yaha aayega
+            height: "calc(100vh - 64px)" // header height minus
           }}
         >
           { <RefreshToken />}

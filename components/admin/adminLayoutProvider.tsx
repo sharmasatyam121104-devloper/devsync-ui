@@ -128,25 +128,15 @@ const menuItems = [
   },
 ]
 
-export interface Session {
-  id: string
-  email: string
-  fullname: string
-  role: "USER" | "ADMIN"
-  iat: number
-  exp: number
-}
 
 const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [session, setSession] = useState<Session | null>(null)
-
-  const router = useRouter()
+  const [loading] = useState(false)
   const pathname = usePathname()
-
-
   const EightySecInMs = 80000
+  const router = useRouter()
+
+
   const { error} = useSWR('/user/refresh-token', fetcher, {
     refreshInterval: EightySecInMs, shouldRetryOnError: false
   })
@@ -159,7 +149,7 @@ const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
   const logoutUserbtn = async()=>{
     await handleLogout()
     router.replace('/login')
-    mutate(() => true, undefined, { revalidate: false })
+    return
   }
 
   useEffect(() => {
@@ -171,30 +161,27 @@ const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
   }, [error, router])
 
   useEffect(() => {
-
     const fetchSession = async () => {
-      try {
+      const data = await getSession()
 
-        const data = await getSession()
+      if (!data) {
+        // Not logged in → redirect to login
+        router.push("/login")
+        return
+      }
 
-
-        if(data){
-          if (data.role !== "ADMIN") {
-            router.push("/login")
-            return
-          }
+      // ab data guaranteed hai
+      if (data.role !== "ADMIN") {
+        if (data.role === "USER") {
+          router.push("/user")
+        } else {
+          router.push("/login")
         }
-
-        setSession(data)
-
-      } finally {
-        setLoading(false)
       }
     }
-
     fetchSession()
 
-  }, [router])
+  },[])
 
   if (loading) {
     return (
@@ -202,9 +189,6 @@ const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
     )
   }
 
-  if (!session) {
-    return <Skeleton active />
-  }
 
 
   return (
@@ -278,7 +262,7 @@ const AdminLayoutProvider = ({ children }: { children: ReactNode }) => {
             minHeight: "100vh",
           }}
         >
-          {session && <RefreshToken />}
+          { <RefreshToken />}
           {children}
         </Content>
 

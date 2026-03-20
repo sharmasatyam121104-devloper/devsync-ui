@@ -33,7 +33,6 @@ const LayoutProvider: FC<Props> = ({ children }) => {
 
   useEffect(() => {
     if (session && (pathname === "/login" || pathname === "/signup")) {
-      console.log("acess in mainlayout");
       router.replace(session.role === "ADMIN" ? "/admin" : "/user")
       return
     }
