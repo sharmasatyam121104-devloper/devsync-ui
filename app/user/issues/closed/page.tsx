@@ -1,4 +1,4 @@
-import ClosedIssues from '@/components/user/projects/closedIssues';
+import ClosedIssues from '@/components/user/issues/closedIssues';
 
 const ClosedIssuesRouter = () => {
   return (
