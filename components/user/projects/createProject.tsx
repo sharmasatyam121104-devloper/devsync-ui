@@ -43,10 +43,10 @@ const CreateProject = () => {
     }
   }
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
+    <div className="min-h-[80vh] flex flex-col items-center justify-center md:px-4">
 
       {/* Main Card */}
-      <Card className="max-w-2xl w-full text-center p-6 shadow-lg rounded-2xl">
+      <Card className="max-w-2xl w-full text-center md:p-6 shadow-lg rounded-2xl">
         <CardContent className="space-y-6">
 
           {/* Heading */}

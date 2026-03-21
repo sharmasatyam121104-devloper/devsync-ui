@@ -145,6 +145,7 @@ export interface Session {
 
 const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const [collapsed, setCollapsed] = useState(false)
+  const [sessionData, setSessionData] = useState("")
   const [loading] = useState(false)
   const pathname = usePathname()
   const EightySecInMs = 80000
@@ -153,6 +154,8 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const { error} = useSWR('/user/refresh-token', fetcher, {
     refreshInterval: EightySecInMs, shouldRetryOnError: false
   })
+
+  console.log(sessionData);
 
   const logoutUser = async()=>{
     await handleLogout()
@@ -177,6 +180,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
 
     const fetchSession = async () => {
         const data = await getSession()
+        setSessionData(data)
 
       if (!data) {
         // Not logged in → redirect to login
@@ -260,7 +264,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
           <div className="hidden sm:flex items-center gap-2 font-bold text-lg text-gray-900">
             <span>Welcome Developer</span>
           </div>
-          <Tooltip title={"Click here for logout."}>
+          <Tooltip title={`Click here for logout.,${(sessionData as any)?.email}`}>
               <AntButton
                 type={"text"}
                 className="hover:bg-red-500"
