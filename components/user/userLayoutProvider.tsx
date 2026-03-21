@@ -213,6 +213,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
     fetchSession()
 
   }, [])
+  
 
   if (loading) {
     return (
@@ -275,7 +276,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
           <div className="hidden sm:flex items-center gap-2 font-bold text-lg text-gray-900">
             <span>Welcome Developer</span>
           </div>
-          <Tooltip title={`Click here for logout.,${(sessionData as any)?.email}`}>
+          <Tooltip title={`Click here for logout.`}>
               <AntButton
                 type={"text"}
                 className="hover:bg-red-500"
