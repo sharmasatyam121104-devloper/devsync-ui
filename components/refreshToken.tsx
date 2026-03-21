@@ -16,7 +16,7 @@ const RefreshToken = () => {
       catch (error) {
         return clientCatchError(error)
       }
-    }, 80000) // 80 seconds
+    }, 390000) // 6.5min
 
     return () => clearInterval(interval)
 

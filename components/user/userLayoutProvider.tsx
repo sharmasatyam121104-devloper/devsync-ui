@@ -20,6 +20,9 @@ import {
   Plus,
   Upload,
   History,
+  PlusCircle,
+  ListChecks,
+  CheckSquare,
 } from "lucide-react"
 
 import Logo from "../logo"
@@ -67,17 +70,25 @@ const menuItems = [
     children: [
       {
         key: "/user/issues",
+        icon: <ListChecks size={16} />,
         label: <Link href="/user/issues">My Issues</Link>,
       },
       {
         key: "/user/issues/active",
+        icon: <CheckSquare size={16} />,
         label: <Link href="/user/issues/active">Active Issues</Link>,
       },
       {
         key: "/user/issues/closed",
+        icon: <CheckSquare size={16} />,
         label: <Link href="/user/issues/closed">Closed Issues</Link>,
       },
-    ],
+      {
+        key: "/user/issues/create-issue",
+        icon: <PlusCircle size={16} />,
+        label: <Link href="/user/issues/create-issue">Create Issues</Link>,
+      },
+    ]
   },
 
   {
