@@ -4,6 +4,7 @@ import React from 'react';
 import useSWR from 'swr';
 import { Skeleton, Button, Result } from 'antd';
 import fetcher from '@/lib/fetcher';
+import { useRouter } from 'next/navigation';
 
 // Project & Member Interfaces
 interface IUser {
@@ -31,9 +32,11 @@ export interface IProject {
 
 const Chat: React.FC = () => {
   const { data, isLoading, error } = useSWR<IProject[]>('/project', fetcher);
+  const router = useRouter()
 
   const handleStartChat = (projectId: string) => {
-    alert(`Start chat for project: ${projectId}`);
+    // Navigate to dynamic chat page
+    router.push(`/user/chat/${projectId}`);
   };
 
   if(isLoading){
@@ -51,15 +54,15 @@ const Chat: React.FC = () => {
           key={project._id}
           className="bg-white p-5 rounded-xl shadow-md border border-gray-100"
         >
-          <h2 className="text-xl font-bold mb-2 capitalize">{project.projectName}</h2>
-          <p className="text-gray-700 mb-2">{project.description}</p>
+          <h2 className="text-xl font-bold mb-2 capitalize">{project?.projectName}</h2>
+          <p className="text-gray-700 mb-2">{project?.description}</p>
           <p className="text-sm text-gray-500 mb-2">
-            <strong>Lead:</strong> {project.members[0]?.userId.fullname}
+            <strong>Lead:</strong> {project?.members[0]?.userId?.fullname}
           </p>
           <p className="text-sm text-gray-500 mb-4">
-            <strong>Status:</strong> {project.status}
+            <strong>Status:</strong> {project?.status}
           </p>
-          <Button type="primary" onClick={() => handleStartChat(project._id)}>
+          <Button type="primary" onClick={() => handleStartChat(project?._id)}>
             Start Chat
           </Button>
         </div>

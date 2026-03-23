@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import httpRequest from "@/lib/http";
+import { Result, Skeleton } from "antd";
 
 // ---------------- TYPES ----------------
 
@@ -102,14 +103,20 @@ const UserDashboard: React.FC = () => {
   );
 
   if (isLoading) {
-    return <div className="p-6">Loading dashboard...</div>;
+    return <div className="p-6"><Skeleton active/></div>;
   }
 
   if (error || !data) {
-    return <div className="p-6">Failed to load dashboard</div>;
+    return (
+      <Result
+        status="error"
+        title="Failed to fetch dashboard data."
+        subTitle={error?.message}
+      />
+    );
   }
 
-  const stats = data.data;
+  const stats = data?.data;
 
   return (
     <div className="p-6 space-y-8">

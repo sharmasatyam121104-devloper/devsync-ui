@@ -291,9 +291,9 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
         {/* CONTENT */}
         <Content
           style={{
-            padding: 24,
+            padding: 2,
             background: "#f8fafc",
-            overflowY: "auto",   // 🔥 scroll yaha aayega
+            overflowY: "auto",   //scroll yaha aayega
             height: "calc(100vh - 64px)" // header height minus
           }}
         >
