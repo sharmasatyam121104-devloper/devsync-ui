@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Video, Mic, ScreenShare, PhoneOff, ShieldCheck, MicOff, VideoOff, ScreenShareOff } from "lucide-react";
+import { Video, Mic, ScreenShare, PhoneOff, ShieldCheck, MicOff, VideoOff, ScreenShareOff, PhoneCall } from "lucide-react";
 import clientCatchError from '@/lib/clientCatchError';
 import httpRequest from '@/lib/http';
 import { getSession } from '@/lib/getSession';
+import { message } from 'antd';
+import socket from '@/lib/socketClient';
 
 // --- INTERFACES ---
 
@@ -24,9 +26,23 @@ interface Member {
   email?: string; // Optional, agar baad mein use karna ho
 }
 
-const meetingId = "69c7b22018b8840edc9c7131";
+const meetingId = "69cd2b8e23714b72eaaa09a4";
 
-const colors = ['bg-indigo-600', 'bg-orange-500', 'bg-emerald-500', 'bg-pink-500', 'bg-blue-500', 'bg-purple-500'];
+const colors = [
+  'bg-indigo-600',
+  'bg-orange-500',
+  'bg-emerald-500', 
+  'bg-pink-500', 
+  'bg-blue-500', 
+  'bg-purple-500'
+];
+
+const config = {
+  iceServers: [
+    {urls: "stun:stun.l.google.com:19302" }
+  ]
+}
+
 
 const GroupVideoCall = () => {
   const [me, setMe] = useState<Session | null>(null);
@@ -39,9 +55,15 @@ const GroupVideoCall = () => {
   // const [isRemoteScreenSharing, setIsRemoteScreenSharing] = useState(false);
   const [isLocalVideoSharing, setisLocalVideoSharing] = useState(false);
   // const [isRemoteVideoSharing, setisRemoteVideoSharing] = useState(false);
+  const [isLocalStart, setIsLocalStart] = useState(false)
   
   const localvideoRef = useRef<HTMLVideoElement | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null)
+  const peersRef = useRef<{ [key: string]: RTCPeerConnection }>({})
+
+  useEffect(() => {
+  socket.emit("join-room", meetingId)
+}, [])
 
   // 1. Fetch Session
   useEffect(() => {
@@ -90,7 +112,6 @@ const GroupVideoCall = () => {
     allMembers.filter(m => m.id !== activeId), 
     [activeId, allMembers]
   );
-
 
 
   const toggleScreen = async()=>{
@@ -168,27 +189,109 @@ const GroupVideoCall = () => {
     }
   }
 
-const toggleMic = async () => {
-  try {
-    const localStream = localStreamRef.current;
+  const toggleMic = async () => {
+    try {
+      const localStream = localStreamRef.current;
 
-    if (!localStream) return;
+      if (!localStream) return;
 
-    const audioTracks = localStream.getAudioTracks();
+      const audioTracks = localStream.getAudioTracks();
 
-    if (audioTracks.length === 0) return;
+      if (audioTracks.length === 0) return;
 
-    audioTracks.forEach(track => {
-      track.enabled = !track.enabled; 
-    });
+      audioTracks.forEach(track => {
+        track.enabled = !track.enabled; 
+      });
 
-    setIsLocalMuted(prev=>!prev)
+      setIsLocalMuted(prev=>!prev)
 
-  } catch (error) {
-    return clientCatchError(error);
+    } catch (error) {
+      return clientCatchError(error);
+    }
+  };
+  
+  const webRtcConnection = ()=>{
+    sideMembers.forEach(member => {
+      const pc = new RTCPeerConnection(config)
+      peersRef.current[member.id] = pc
+      const localStream = localStreamRef.current
+
+      if(!localStream ) {
+        return null
+      }
+      
+      pc.onicecandidate = (e: any)=>{
+        console.log(e.candidate);
+      }
+
+      pc.onconnectionstatechange = ()=>{
+        console.log(pc.connectionState);
+      }
+
+      pc.ontrack = ()=>{
+        console.log("Comming form remote side");
+      }
+
+      localStream.getTracks().forEach((tracks)=>{
+        pc.addTrack(tracks, localStream)
+      })
+
+    })
+
   }
-};
 
+  const joinCall = async()=>{
+    try {
+      if(!isLocalVideoSharing && !isLocalScreenSharing){
+        return message.warning("Start Video First.")
+      }
+      setIsLocalStart(true)
+      webRtcConnection()
+
+      if(!peersRef.current){
+        return 
+      }
+
+      for (const id in peersRef.current) {
+        const pc = peersRef.current[id]
+
+        const offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        socket.emit("offer", {
+          offer,
+          roomId: meetingId,
+          from: me?.id
+        })
+      }
+    } 
+    catch (error) {
+      return clientCatchError(error)  
+    }
+  }
+
+  const endCall = async()=>{
+    try {
+      
+    } 
+    catch (error) {
+      return clientCatchError(error)  
+    }
+  }
+
+
+  //Event Listener
+
+  const onOffer = (payload: any)=>{
+    console.log("Offer received:", payload)
+  }
+
+  useEffect(()=>{
+    socket.on("offer", onOffer)
+
+    return ()=>{
+      socket.off("offer", onOffer)
+    }
+  },[])
 
 
   if (allMembers.length === 0) {
@@ -284,10 +387,26 @@ const toggleMic = async () => {
             {!isLocalVideoSharing ? <VideoOff size={22}/> : <Video size={22} />}
           </button>
           
-          <button className="px-12 py-4 bg-red-600 hover:bg-red-700 text-white rounded-[1.5rem] transition-all flex items-center gap-3 shadow-xl shadow-red-100 active:scale-95">
-            <PhoneOff size={20} fill="currentColor" />
-            <span className="font-black text-xs uppercase tracking-tighter">End Call</span>
-          </button>
+          { isLocalStart ? (
+
+            <button 
+              onClick={endCall}
+              className="px-12 py-4 bg-red-600 hover:bg-red-700 text-white 
+                rounded-[1.5rem] transition-all flex items-center gap-3 
+                shadow-xl shadow-red-100 active:scale-95 cursor-pointer"
+              >
+              <PhoneOff size={20} fill="currentColor" />
+              <span className="font-black text-xs uppercase tracking-tighter">Join Group Video Call</span>
+            </button>
+            ) : (
+            <button 
+              onClick={joinCall}
+            className="px-12 py-4 bg-green-600 hover:bg-green-700 text-white rounded-[1.5rem] transition-all flex items-center gap-3 shadow-xl shadow-red-100 active:scale-95 cursor-pointer">
+              <PhoneCall size={20} fill="currentColor" />
+              <span className="font-black text-xs uppercase tracking-tighter">Join Group Video Call</span>
+            </button>
+            )
+          }
 
           <button 
             onClick={toggleScreen}
