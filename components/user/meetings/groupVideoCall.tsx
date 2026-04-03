@@ -26,6 +26,23 @@ interface Member {
   email?: string; // Optional, agar baad mein use karna ho
 }
 
+interface OnOfferInterface {
+  from: string,
+  offer: RTCSessionDescriptionInit,
+  roomId: string,
+}
+
+interface OnAnswerInterface {
+  from: string,
+  answer: RTCSessionDescriptionInit,
+  roomId: string,
+}
+
+interface OnCandidateInterface {
+  candidate: RTCIceCandidateInit,
+  from: string
+}
+
 const meetingId = "69cd2b8e23714b72eaaa09a4";
 
 const colors = [
@@ -60,6 +77,12 @@ const GroupVideoCall = () => {
   const localvideoRef = useRef<HTMLVideoElement | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null)
   const peersRef = useRef<{ [key: string]: RTCPeerConnection }>({})
+
+  useEffect(() => {
+  if (me?.id) {
+    socket.emit("register", me.id);
+  }
+}, [me]);
 
   useEffect(() => {
   socket.emit("join-room", meetingId)
@@ -212,6 +235,8 @@ const GroupVideoCall = () => {
   
   const webRtcConnection = ()=>{
     sideMembers.forEach(member => {
+      if (peersRef.current[member.id]) return;
+
       const pc = new RTCPeerConnection(config)
       peersRef.current[member.id] = pc
       const localStream = localStreamRef.current
@@ -219,22 +244,42 @@ const GroupVideoCall = () => {
       if(!localStream ) {
         return null
       }
+
+      localStream.getTracks().forEach((track)=>{
+        pc.addTrack(track, localStream)
+      })
       
       pc.onicecandidate = (e: any)=>{
-        console.log(e.candidate);
+        if(e.candidate){
+          socket.emit("candidate", {
+            candidate: e.candidate,
+            roomId: meetingId,
+            to: member.id, 
+            from: me?.id
+          })
+        }
       }
 
       pc.onconnectionstatechange = ()=>{
         console.log(pc.connectionState);
       }
 
-      pc.ontrack = ()=>{
-        console.log("Comming form remote side");
-      }
+      pc.ontrack = (e: any) => {
+        const remoteStream = e.streams[0];
+        if (!remoteStream) return;
 
-      localStream.getTracks().forEach((tracks)=>{
-        pc.addTrack(tracks, localStream)
-      })
+        console.log(`Track received from ${member.id}`, remoteStream);
+
+        // 1. Sidebar wala video element pakdo
+        const remoteVideo = document.getElementById(`video-${member.id}`) as HTMLVideoElement;
+        if (remoteVideo) {
+          remoteVideo.srcObject = remoteStream;
+          // 2. Avatar hide karo agar banaya hai toh
+          const avatar = document.getElementById(`avatar-${member.id}`);
+          if (avatar) avatar.style.display = "none";
+        }
+      };
+
 
     })
 
@@ -253,15 +298,16 @@ const GroupVideoCall = () => {
       }
 
       for (const id in peersRef.current) {
-        const pc = peersRef.current[id]
+        const pc = peersRef.current[id];
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
 
-        const offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
         socket.emit("offer", {
           offer,
           roomId: meetingId,
-          from: me?.id
-        })
+          to: id,        // <--- YE ZAROORI HAI (Target User ID)
+          from: me?.id   // <--- YE BHI (Sender ID)
+        });
       }
     } 
     catch (error) {
@@ -269,6 +315,39 @@ const GroupVideoCall = () => {
     }
   }
 
+const accept = async (payload: OnOfferInterface) => {
+  try {
+    // 1. Connection check/create
+    webRtcConnection();
+    const pc = peersRef.current[payload.from];
+
+    if (!pc) return;
+
+    // 2. ERROR FIX: Check connection state
+    // Agar state 'stable' hai, matlab answer pehle hi set ho chuka hai
+    if (pc.signalingState === "stable") return;
+
+    // 3. Remote Offer set karo
+    const offer = new RTCSessionDescription(payload.offer);
+    await pc.setRemoteDescription(offer);
+
+    // 4. Answer create aur set karo
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    // 5. Answer emit karo (Make sure 'from' field is there!)
+    socket.emit("answer", {
+      answer,
+      to: payload.from,
+      from: me?.id, // Important for the other side!
+      roomId: meetingId
+    });
+    console.log("Offer received from:", payload.from, "I am:", me?.id);
+
+  } catch (error) {
+    console.error("Accept Error:", error);
+  }
+};
   const endCall = async()=>{
     try {
       
@@ -281,17 +360,54 @@ const GroupVideoCall = () => {
 
   //Event Listener
 
-  const onOffer = (payload: any)=>{
-    console.log("Offer received:", payload)
+  const onOffer = (payload: OnOfferInterface)=>{
+    accept(payload)
   }
 
-  useEffect(()=>{
-    socket.on("offer", onOffer)
+  const onCandidate = async(payload: OnCandidateInterface)=>{
+    try {
+      
+      const pc = peersRef.current[payload.from];
+      if (!pc) {
+        console.log("Peer connection is not initialize for user:", payload.from);
+        return;
+      }
 
-    return ()=>{
-      socket.off("offer", onOffer)
+      const candidate = new RTCIceCandidate(payload.candidate)
+      await pc.addIceCandidate(candidate)
+    } 
+    catch (error) {
+      return clientCatchError(error)  
     }
-  },[])
+  }
+
+  const onAnswer = async(payload: OnAnswerInterface)=>{
+    try {
+      const pc = peersRef.current[payload.from];
+      if (!pc) {
+        console.log("Peer connection is not initialize for user:", payload.from);
+      }
+      const answer = new RTCSessionDescription(payload.answer)
+      await pc.setRemoteDescription(answer)
+    } 
+    catch (error) {
+      return clientCatchError(error)  
+    }
+  }
+
+useEffect(() => {
+  if (!me || allMembers.length === 0) return; // Wait for data
+
+  socket.on("offer", onOffer);
+  socket.on("candidate", onCandidate);
+  socket.on("answer", onAnswer);
+
+  return () => {
+    socket.off("offer", onOffer);
+    socket.off("candidate", onCandidate);
+    socket.off("answer", onAnswer);
+  };
+}, [me, allMembers]); // Re-subscribe when data changes
 
 
   if (allMembers.length === 0) {
@@ -325,7 +441,7 @@ const GroupVideoCall = () => {
         <div className="flex-[0.7] h-full">
           <div className="w-full h-full bg-white rounded-[2rem] border border-gray-200 shadow-sm overflow-hidden relative transition-all duration-500">
             {  mainMember?.id === me?.id ? (
-                <video ref={localvideoRef} autoPlay playsInline  className="w-full h-full object-cover bg-black" />
+                <video ref={localvideoRef} autoPlay playsInline muted className="w-full h-full object-cover bg-black" />
             ) : (
                 <div className={`w-full h-full ${mainMember?.color} flex items-center justify-center`}>
                     <div className="text-center">
@@ -349,26 +465,40 @@ const GroupVideoCall = () => {
               In Call ({allMembers.length})
             </p>
             
-            {sideMembers.map((member) => (
-              <div 
-                key={member.id} 
-                onClick={() => setActiveId(member.id)}
-                className="aspect-video bg-white rounded-3xl border border-gray-100 overflow-hidden relative group cursor-pointer hover:border-indigo-400 transition-all duration-300 shadow-sm"
-              >
-                { member.id === me?.id ? (
-                    <video ref={localvideoRef} autoPlay playsInline muted className="w-full h-full object-cover bg-black" />
-                ) : (
-                    <div className={`w-full h-full ${member.color} flex items-center justify-center opacity-90 group-hover:opacity-100`}>
-                        <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-sm font-bold text-white">
-                            {member?.name?.charAt(0)}
-                        </div>
-                    </div>
-                )}
-                <div className="absolute bottom-3 left-3 bg-white/90 text-gray-800 text-[10px] px-2.5 py-1 rounded-lg font-bold shadow-sm">
-                  {member.name}
+              {sideMembers.map((member) => (
+                <div 
+                  key={member.id} 
+                  onClick={() => setActiveId(member.id)}
+                  className="aspect-video bg-white rounded-3xl border border-gray-100 overflow-hidden relative group cursor-pointer hover:border-indigo-400 transition-all duration-300 shadow-sm"
+                >
+{ member.id === me?.id ? (
+  <video ref={localvideoRef} autoPlay playsInline muted className="w-full h-full object-cover bg-black" />
+) : (
+  <div className="w-full h-full relative">
+    
+    <video
+      id={`video-${member.id}`}
+      autoPlay
+      playsInline
+      className="w-full h-full object-cover bg-black"
+    />
+
+    <div
+      id={`avatar-${member.id}`}
+      className={`absolute inset-0 ${member.color} flex items-center justify-center opacity-90 group-hover:opacity-100`}
+    >
+      <div className="w-12 h-12 rounded-full bg-white/30 flex items-center justify-center text-sm font-bold text-white">
+        {member?.name?.charAt(0)}
+      </div>
+    </div>
+
+  </div>
+)}
+                  <div className="absolute bottom-3 left-3 bg-white/90 text-gray-800 text-[10px] px-2.5 py-1 rounded-lg font-bold shadow-sm">
+                    {member.name}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </div>
