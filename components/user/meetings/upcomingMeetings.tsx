@@ -14,6 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
 
 //  Interface
 interface IMeeting {
@@ -27,6 +28,7 @@ interface IMeeting {
 const UpcomingMeetings: React.FC = () => {
   const [meetings, setMeetings] = useState<IMeeting[]>([]);
   const [loading, setLoading] = useState(false);
+  const router = useRouter()
 
   // Fetch Meetings
   const fetchMeetings = async () => {
@@ -95,7 +97,8 @@ const UpcomingMeetings: React.FC = () => {
                   <Button
                     className="w-full"
                     onClick={() =>
-                      window.open(meeting.meetingLink!, "_blank")
+                      // window.open(meeting.meetingLink!, "_blank")
+                      router.push(`meetings/join-meeting/${meeting._id}`)
                     }
                   >
                     Join Meeting
