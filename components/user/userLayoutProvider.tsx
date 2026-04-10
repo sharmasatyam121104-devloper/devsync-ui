@@ -23,6 +23,8 @@ import {
   PlusCircle,
   ListChecks,
   CheckSquare,
+  Flag,
+  ClipboardList,
 } from "lucide-react"
 
 import Logo from "../logo"
@@ -121,6 +123,24 @@ const menuItems = [
       {
         key: "/user/meetings",
         label: <Link href="/user/meetings">Upcoming Meetings</Link>,
+      },
+    ],
+  },
+
+  {
+    key: "reports",
+    icon: <Flag size={16} />,
+    label: "Reports",
+    children: [
+      {
+        key: "/user/reports/create-report",
+        icon: <Flag size={14} />,
+        label: <Link href="/user/reports/create-report">Report User</Link>,
+      },
+      {
+        key: "/user/reports/report-history",
+        icon: <ClipboardList size={14} />,
+        label: <Link href="/user/reports/report-history">Report History</Link>,
       },
     ],
   },
@@ -235,7 +255,7 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
             background: PRIMARY_BG, 
             position: "sticky", 
             top: 0,
-            height: "100vh"
+            height: "100vh",
           }}
         breakpoint="lg"
         trigger={null} 
