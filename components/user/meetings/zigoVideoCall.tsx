@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams} from "next/navigation";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 import { getSession } from "@/lib/getSession";
 
@@ -15,6 +15,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import httpRequest from "@/lib/http";
+import clientCatchError from "@/lib/clientCatchError";
 
 interface Session {
   id: string;
@@ -52,8 +53,9 @@ const ZigoVideoCall = () => {
   const [me, setMe] = useState<Session | null>(null);
   const [meeting, setMeeting] = useState<Meeting | null>(null);
   const [showSidebar, setShowSidebar] = useState(true);
+  
 
-  // ✅ Fetch session
+  // Fetch session
   useEffect(() => {
     const fetchSession = async () => {
       const data = await getSession();
@@ -62,7 +64,7 @@ const ZigoVideoCall = () => {
     fetchSession();
   }, []);
 
-  // ✅ Fetch meeting
+  // Fetch meeting
   useEffect(() => {
     if (!meetingId) return;
 
@@ -78,62 +80,70 @@ const ZigoVideoCall = () => {
     fetchMeeting();
   }, [meetingId]);
 
-  // ✅ Zego Init (FINAL FIX)
-  useEffect(() => {
-    if (!me || !meetingId || !containerRef.current) return;
+  // Zego Init (FINAL FIX)
+    useEffect(() => {
+    if (!me || !meetingId) return;
+    if (!containerRef.current) return;
     if (hasJoined.current) return;
 
-    hasJoined.current = true;
-
+    let isMounted = true;
     let zp: ReturnType<typeof ZegoUIKitPrebuilt.create> | null = null;
 
-    const init = () => {
-      const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID);
-      const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET!;
+    const init = async () => {
+        try {
+        const appID = Number(process.env.NEXT_PUBLIC_ZEGO_APP_ID);
+        const serverSecret = process.env.NEXT_PUBLIC_ZEGO_SERVER_SECRET!;
 
-      const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
-        appID,
-        serverSecret,
-        meetingId,
-        me.id,
-        me.fullname
-      );
+        const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+            appID,
+            serverSecret,
+            meetingId,
+            me.id,
+            me.fullname
+        );
 
-      zp = ZegoUIKitPrebuilt.create(kitToken);
+        if (!isMounted || !containerRef.current) return;
 
-      zp.joinRoom({
-        container: containerRef.current!,
-        scenario: {
-          mode: ZegoUIKitPrebuilt.GroupCall,
-        },
-        showScreenSharingButton: true,
-        maxUsers: 10,
-        layout: "Sidebar",
-        showLayoutButton: true,
-      });
+        zp = ZegoUIKitPrebuilt.create(kitToken);
+
+        zp.joinRoom({
+            container: containerRef.current,
+            scenario: {
+            mode: ZegoUIKitPrebuilt.GroupCall,
+            },
+            layout: window.innerWidth < 768 ? "Grid" : "Sidebar",
+            showLayoutButton: true
+        });
+
+        hasJoined.current = true;
+
+        } 
+        catch (err) {
+            return clientCatchError(err)
+        }
     };
 
-    // slight delay for stability
-    const timer = setTimeout(init, 100);
+    init();
 
     return () => {
-      clearTimeout(timer);
-      zp?.destroy();
-      hasJoined.current = false;
+        isMounted = false;
+        zp?.destroy();
+        hasJoined.current = false;
     };
-  }, [me, meetingId]);
+
+    }, [me, meetingId]);
 
     return (
     <div className="relative w-full h-[calc(100vh-64px)] bg-black flex">
 
-        {/* ✅ Zego Video (main area) */}
+        {/* Zego Video (main area) */}
             <div
             ref={containerRef}
             style={{ width: "85vw", height: "85vh" }}
             className=" mt-9"
             />
 
-        {/* ✅ Sidebar (responsive) */}
+        {/* Sidebar (responsive) */}
         {showSidebar && (
         <div className="
             w-75 max-md:w-62.5 max-sm:w-full
@@ -206,7 +216,7 @@ const ZigoVideoCall = () => {
         </div>
         )}
 
-        {/* ✅ Top Bar (adjusted) */}
+        {/*  Top Bar (adjusted) */}
         <div className="absolute top-0 left-0 w-full flex justify-between items-center px-4 py-2 bg-black/60 backdrop-blur-md text-white z-10">
 
         <div>

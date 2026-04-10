@@ -41,7 +41,6 @@ interface IFormValues {
   title: string;
   description?: string;
   dateTime: Dayjs;
-  meetingLink: string;
 }
 
 const ScheduleMeeting: React.FC = () => {
@@ -87,7 +86,6 @@ const ScheduleMeeting: React.FC = () => {
         title: values.title,
         description: values.description,
         dateTime: values.dateTime.toISOString(),
-        meetingLink: values.meetingLink,
       });
 
       message.success("Meeting scheduled successfully");
@@ -192,17 +190,6 @@ const ScheduleMeeting: React.FC = () => {
                 current && current < dayjs().startOf("day")
               }
             />
-          </Form.Item>
-
-          <Form.Item
-            label="Meeting Link"
-            name="meetingLink"
-            rules={[
-              { required: true, message: "Enter meeting link" },
-              { type: "url", message: "Enter a valid URL" },
-            ]}
-          >
-            <Input placeholder="https://meet.google.com/..." />
           </Form.Item>
 
           <Button

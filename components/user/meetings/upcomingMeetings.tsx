@@ -93,7 +93,7 @@ const UpcomingMeetings: React.FC = () => {
               <div className="flex flex-col gap-4">
 
                 {/*  Join Button */}
-                {meeting.joinEnabled && meeting.meetingLink ? (
+                {meeting.joinEnabled  ? (
                   <Button
                     className="w-full"
                     onClick={() =>
