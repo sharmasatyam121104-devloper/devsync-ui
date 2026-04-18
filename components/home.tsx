@@ -17,8 +17,33 @@ import {
   Rocket,
   Shield
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import httpRequest from "@/lib/http";
 
 const Home = () => {
+  const router = useRouter()
+
+const handleLoginRedirect = async () => {
+  try {
+    const { data } = await httpRequest.get("/user/session");
+
+    const session = data.session;
+
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
+    if (session.role === "ADMIN") {
+      router.push("/admin");
+    } else {
+      router.push("/user");
+    }
+  } catch {
+    router.push("/login");
+  }
+};
+    
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/10">
 
@@ -38,7 +63,7 @@ const Home = () => {
             <Link href="#about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">About</Link>
             <Separator orientation="vertical" className="h-4" />
             <Link href="/login">
-              <Button variant="ghost" size="sm">Login</Button>
+              <Button variant="ghost" size="sm" onClick={handleLoginRedirect}>Login</Button>
             </Link>
             <Link href="/signup">
               <Button size="sm">Get Started</Button>
