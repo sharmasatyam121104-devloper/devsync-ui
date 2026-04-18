@@ -10,9 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Modal, Input, Button as AntBtn, message } from "antd";
+import { Modal, Input, Button as AntBtn, message, Empty } from "antd";
 import httpRequest from "@/lib/http";
 import clientCatchError from "@/lib/clientCatchError";
+import { useRouter } from "next/navigation";
 
 // Types
 export interface IUser {
@@ -63,6 +64,8 @@ const CreateReport = () => {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter()
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -72,7 +75,16 @@ const CreateReport = () => {
         );
         setProjects(activeProjects);
       } catch (err) {
-        console.error(err);
+          if (err) {
+    return (
+      <div className="p-6 flex flex-col items-center gap-3">
+        <h1 className="text-xl font-semibold text-black">
+          Create Report
+        </h1>
+        <Empty description="Error in fetch Projects" />
+      </div>
+    );
+  }
       }
     };
 
@@ -113,6 +125,8 @@ const CreateReport = () => {
       setSelectedProjectId("");
 
       message.success(data.message);
+      router.replace('/user/reports/report-history')
+    
     } catch (error) {
       return clientCatchError(error);
     } finally {
@@ -161,7 +175,7 @@ const CreateReport = () => {
                     handleSelectMember(project._id, val)
                   }
                 >
-                  <SelectTrigger className="w-full sm:w-[260px] bg-white border border-gray-300 text-black">
+                  <SelectTrigger className="w-full sm:w-65 bg-white border border-gray-300 text-black">
                     <SelectValue placeholder="Select member" />
                   </SelectTrigger>
 
