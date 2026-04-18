@@ -179,12 +179,16 @@ const UserLayoutProvider = ({ children }: { children: ReactNode }) =>  {
   const [sessionData, setSessionData] = useState("")
   const [loading] = useState(false)
   const pathname = usePathname()
-  const EightySecInMs = 80000
+  const EightMinInMs = 8 * 60 * 1000;
   const router = useRouter()
 
-  const { error} = useSWR('/user/refresh-token', fetcher, {
-    refreshInterval: EightySecInMs, shouldRetryOnError: false
-  })
+const { error } = useSWR('/user/refresh-token', fetcher, {
+  refreshInterval: EightMinInMs,
+  revalidateOnFocus: false,
+  refreshWhenHidden: false,
+  refreshWhenOffline: false,
+  shouldRetryOnError: false,
+});
 
   console.log(sessionData);
 
