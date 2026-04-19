@@ -19,6 +19,16 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import httpRequest from "@/lib/http";
+import { AxiosError } from "axios";
+
+export interface Session {
+  id: string
+  email: string
+  fullname: string
+  role: "USER" | "ADMIN"
+  iat: number
+  exp: number
+}
 
 const Home = () => {
   const router = useRouter()
@@ -26,21 +36,36 @@ const Home = () => {
 const handleLoginRedirect = async () => {
   try {
     const { data } = await httpRequest.get("/user/session");
+    redirectUser(data.session);
+  } catch (error) {
+    const err = error as AxiosError;
 
-    const session = data.session;
+    if (err.response?.status === 401) {
+      try {
+        await httpRequest.get("/user/refresh-token");
 
-    if (!session) {
-      router.push("/login");
-      return;
-    }
-
-    if (session.role === "ADMIN") {
-      router.push("/admin");
+        const { data } = await httpRequest.get("/user/session");
+        redirectUser(data.session);
+      } catch (refreshError) {
+        router.push("/login");
+        console.log(refreshError);
+      }
     } else {
-      router.push("/user");
+      router.push("/login");
     }
-  } catch {
+  }
+};
+
+const redirectUser = (session: Session) => {
+  if (!session) {
     router.push("/login");
+    return;
+  }
+
+  if (session.role === "ADMIN") {
+    router.push("/admin");
+  } else {
+    router.push("/user");
   }
 };
     
