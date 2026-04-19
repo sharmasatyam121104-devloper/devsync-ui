@@ -40,12 +40,11 @@ const Users = () => {
   const users: User[] = data?.users || []
   const total = data?.totalUser || 0
 
-  console.log(error);
 
   if(error){
     return(
       <div>
-         {/* ❌ Error */}
+         {/* Error */}
           {error && (
             <div className="mb-4">
               <Alert
@@ -76,7 +75,7 @@ const Users = () => {
           <div className="w-full overflow-x-auto rounded-xl border">
             <div className="min-w-175">
 
-              {/* ⏳ Loading */}
+              {/*  Loading */}
               {isLoading ? (
                 <div className="p-4 space-y-3">
                   {[...Array(5)].map((_, i) => (
@@ -85,7 +84,7 @@ const Users = () => {
                 </div>
               ) : users.length === 0 ? (
 
-                /* 📭 Empty */
+                /* Empty */
                 <div className="py-10 flex justify-center">
                   <Empty description="No users found" />
                 </div>
