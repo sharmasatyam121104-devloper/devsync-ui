@@ -63,7 +63,7 @@ const UserReports = () => {
     );
   }
 
-  // ⏳ LOADING
+  //  LOADING
   if (isLoading) {
     return (
       <div className="p-4 space-y-4">
@@ -76,7 +76,7 @@ const UserReports = () => {
     )
   }
 
-  // 📭 EMPTY
+  //  EMPTY
   if (!reports.length) {
     return (
       <div className="p-4 py-20 flex justify-center">
@@ -85,7 +85,7 @@ const UserReports = () => {
     )
   }
 
-  // ✅ ACTION HANDLER
+  //  ACTION HANDLER
   const handleStatusChange = (reportId: string, status: "approved" | "rejected") => {
     Modal.confirm({
       title: "ARE YOU SURE?",

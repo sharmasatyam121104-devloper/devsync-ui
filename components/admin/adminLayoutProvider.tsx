@@ -14,9 +14,11 @@ import {
 } from "@ant-design/icons"
 
 import {
+  Bug,
   CircleUserRound,
   ClipboardList,
   Cpu,
+  FolderKanban,
   UserCircle,
   UserRoundCheck,
   UserRoundPen,
@@ -88,6 +90,20 @@ const menuItems = [
         label: <Link href="/admin/reports/content">Content Reports</Link>,
       },
     ],
+  },
+  
+  {
+    key: "/admin/projects",
+    icon: <FolderKanban size={18} />,
+    label: <Link href="/admin/projects">Projects</Link>,
+    title: "",
+  },
+
+  {
+    key: "/admin/issues",
+    icon: <Bug size={18} />,
+    label: <Link href="/admin/issues">Issues</Link>,
+    title: "",
   },
 
   {
